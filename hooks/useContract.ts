@@ -7,7 +7,7 @@ import {
   useContractRead,
   useNetwork,
   usePublicClient,
-  useWalletClient
+  useWalletClient,
 } from 'wagmi';
 import { BABT_ADDRESSES, COLLAB_ADDRESS } from '../constants/addresses';
 
@@ -29,7 +29,7 @@ export function useContract<TAbi extends Abi>(
       return getContract({
         abi,
         address,
-        publicClient: publicClient,
+        publicClient,
         walletClient: walletClient as WalletClient,
       });
     } catch (error) {
@@ -63,8 +63,35 @@ export function useCollabContract() {
 }
 
 /**
- * ERC1155 contract hook
+ * ERC-1155 contract hook
  */
 export function useERC1155Contract(address?: Address) {
   return useContract(address, erc1155ABI);
+}
+
+/**
+ * ERC-1155 batch balance helper
+ * (imperative, integration-level)
+ */
+export function useERC1155BatchBalance(address?: Address) {
+  const contract = useERC1155Contract(address);
+
+  const getBatchBalances = async (
+    owner: Address,
+    ids: number[]
+  ): Promise<readonly bigint[] | null> => {
+    if (!contract) return null;
+
+    const accounts = new Array(ids.length).fill(owner);
+
+    
+    const result = await contract.read.balanceOfBatch([
+      accounts,
+      ids,
+    ]);
+
+    return result as readonly bigint[];
+  };
+
+  return { getBatchBalances };
 }
